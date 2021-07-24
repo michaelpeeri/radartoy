@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <string>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -141,6 +142,11 @@ int main(void)
   HAL_IncTick();
   HAL_GetTick();
 
+  const std::string msg = {"Hello, World!\n"};
+  //const char *msg = 
+  //const uint8_t nmsg = strlen(msg);
+  //HAL_StatusTypeDef serstat;
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -158,6 +164,7 @@ int main(void)
       HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_SET);
       HAL_Delay(300);
 
+      HAL_UART_Transmit(&huart3, (uint8_t*)msg.c_str(), msg.length(), 0xFFFF);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
