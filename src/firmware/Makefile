@@ -131,7 +131,7 @@ C_INCLUDES =  \
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
-CFLAGS = $(MCU) $(C_DEFS) -specs=nosys.specs -specs=nano.specs $(C_INCLUDES) $(OPT) -std=c++20 -Wall -fdata-sections -ffunction-sections
+CFLAGS = $(MCU) $(C_DEFS) -specs=nosys.specs -specs=nano.specs $(C_INCLUDES) $(OPT) -std=c++20 -Wall -Wno-volatile -fdata-sections -ffunction-sections
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
