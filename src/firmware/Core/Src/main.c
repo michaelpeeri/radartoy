@@ -136,11 +136,27 @@ int main(void)
 
   /* USER CODE END 2 */
 
+
+  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);   
+  HAL_IncTick();
+  HAL_GetTick();
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
+
+      //GPIO_InitTypeDef GPIO_InitStruct;
+      HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
+      HAL_Delay(100);
+      HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_SET);
+      HAL_Delay(100);
+
+      HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_RESET);
+      HAL_Delay(100);
+      HAL_GPIO_WritePin(LED0_GPIO_Port, LED0_Pin, GPIO_PIN_SET);
+      HAL_Delay(300);
 
     /* USER CODE BEGIN 3 */
   }
