@@ -66,9 +66,12 @@ void TIM3_IRQHandler(void);
 void TIM6_IRQHandler(void);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc);
+void ADC1_IRQHandler(void);
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc);
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc);
-  
+
+static bool convComplete1;
+
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */

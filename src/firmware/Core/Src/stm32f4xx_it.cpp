@@ -63,6 +63,10 @@ extern DMA_HandleTypeDef hdma_usart3_tx;
 extern DMA_HandleTypeDef hdma_tim6_up;
 extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim6;
+extern ADC_HandleTypeDef hadc1;
+
+extern bool convComplete1;
+
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -287,15 +291,22 @@ void TIM6_IRQHandler(void) {
   HAL_TIM_IRQHandler(&htim6);
 }
 
+void ADC1_IRQHandler(void) {
+  HAL_ADC_ConvCpltCallback(&hadc1);
+}
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   // This callback is automatically called by the HAL on the UEV event
   if(htim->Instance == TIM3)
     HAL_GPIO_TogglePin(LED0_GPIO_Port, LED0_Pin);
+  //else if(htim->Instance == TIM2)
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-  //convCompleted = 1;
+  //if( hadc->Instance==ADC1 )
+  convComplete1 = true;
+  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
+
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
