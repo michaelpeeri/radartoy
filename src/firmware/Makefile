@@ -36,7 +36,6 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Src/stm32f4xx_hal_msp.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_adc_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_adc.c \
@@ -67,7 +66,8 @@ Core/Src/system_stm32f4xx.c
 # C++ sources
 CPP_SOURCES = \
 Core/Src/main.cpp \
-Core/Src/stm32f4xx_it.cpp
+Core/Src/stm32f4xx_it.cpp \
+Core/Src/stm32f4xx_hal_msp.cpp 
 
 
 
@@ -139,7 +139,7 @@ C_INCLUDES =  \
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
 CFLAGS   = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
-CPPFLAGS = $(MCU) $(C_DEFS) -specs=nosys.specs -specs=nano.specs $(C_INCLUDES) $(OPT) -std=c++20 -Wall -Wno-volatile -fdata-sections -ffunction-sections
+CPPFLAGS = $(MCU) $(C_DEFS) -specs=nosys.specs -specs=nano.specs $(C_INCLUDES) $(OPT) -std=c++20 -Wall -Wno-volatile -fdata-sections -ffunction-sections -fstack-usage -fcallgraph-info
 
 ifeq ($(DEBUG), 1)
 CFLAGS   += -g -gdwarf-2

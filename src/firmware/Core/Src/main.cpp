@@ -21,6 +21,7 @@
 #include "main.h"
 #include <string>
 #include <array>
+//#include "stm32f4xx_ll_usart.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -68,7 +69,6 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 bool convComplete1 = false;
 
-/* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
 
@@ -152,7 +152,7 @@ int main(void)
 
   // Start ADC using DMA
 
-  const std::string msg = {"Hello, World!\n"};
+  const std::string msg = {"Hello, World!\n"};   // TODO where is this stored?
 
 
   /* TIM6 DMA Init */
@@ -188,8 +188,10 @@ int main(void)
   //HAL_NVIC_EnableIRQ(TIM6_IRQn);
   //HAL_TIM_Base_Start_IT(&htim6);
 
-  static std::array<uint16_t,4096> adc1vals;
+  static std::array<uint16_t,2'048+4> adc1vals;
   adc1vals.fill(0);
+  //adc1vals[2048+2] = '\n'
+  adc1vals[2048+3] = '\n';
 
   //HAL_ADC_Start_DMA(hadc2, pbuf2, 1000);
 
@@ -206,7 +208,7 @@ int main(void)
   while (1)
   {
     //HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
   
 
     //HAL_Delay(20);
@@ -214,13 +216,13 @@ int main(void)
 
     HAL_TIM_Base_Start(&htim2);
     //HAL_TIM_Base_Start_IT(&htim2);
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc1vals.data(), 4096);
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc1vals.data(), 2'048);
+    while(!convComplete1);
+    convComplete1 = false;
 
-
-    //while(!convComplete1);
-
-    HAL_Delay(10);
-    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+    //HAL_Delay(60);
+    HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+    //HAL_Delay(60);
 
     //HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
     //HAL_Delay(20);
@@ -242,11 +244,24 @@ int main(void)
 
     //const uint16_t val = HAL_ADC_GetValue(&hadc1);
 
-    HAL_UART_Transmit(&huart3, (uint8_t*)adc1vals.data(), 4096,         HAL_MAX_DELAY);
+    //HAL_UART_DMAStop(&huart3);
+    //HAL_DMA_Start(&hdma_usart3_tx, (uint32_t)adc1vals.data(), (uint32_t)&huart3.Instance->DR, 2'048+4 );
+    //huart3.Instance->CR3 |= USART_CR3_DMAT;
+    //LL_USART_EnableDMAReq_TX( &huart3 );
+    adc1vals[2048-3] = static_cast<uint16_t>('\n');
+    adc1vals[2048-2] = static_cast<uint16_t>('\n');
+    adc1vals[2048-1] = static_cast<uint16_t>('\n');
+    adc1vals[2048-0] = static_cast<uint16_t>('\n');
+
+    HAL_UART_Transmit_DMA(&huart3, (uint8_t*)adc1vals.data(), 2'048+4);
+    HAL_Delay(95);
+
+    //huart3.Instance->CR3 &= ~USART_CR3_DMAT;
+
+    //HAL_UART_Transmit(&huart3, (uint8_t*)adc1vals.data(), 2048,         HAL_MAX_DELAY);
     //HAL_UART_Transmit(&huart3, (uint8_t*)&val,            2,            HAL_MAX_DELAY);
-    HAL_UART_Transmit(&huart3, (uint8_t*)&convComplete1,  1,            HAL_MAX_DELAY);
-    HAL_UART_Transmit(&huart3, (uint8_t*)msg.c_str(),     msg.length(), HAL_MAX_DELAY);
-    convComplete1 = false;
+    //HAL_UART_Transmit(&huart3, (uint8_t*)&convComplete1,  1,            HAL_MAX_DELAY);
+    //HAL_UART_Transmit(&huart3, (uint8_t*)msg.c_str(),     msg.length(), HAL_MAX_DELAY);
 
     //HAL_TIM_Base_Stop_IT(&htim2);
     HAL_ADC_Stop_DMA(&hadc1);
@@ -568,16 +583,16 @@ static void MX_TIM2_Init(void)
   /* USER CODE END TIM2_Init 0 */
 
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef      sConfigOC = {0};
+  //TIM_OC_InitTypeDef      sConfigOC = {0};
   TIM_ClockConfigTypeDef  sClockSourceConfig = {0};
 
   /* USER CODE BEGIN TIM2_Init 1 */
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 200-1;
+  htim2.Init.Prescaler = 28-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 21-1;
+  htim2.Init.Period = 60-1;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -634,8 +649,8 @@ static void MX_TIM5_Init(void)
 
   /* USER CODE END TIM5_Init 0 */
 
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
+  //TIM_MasterConfigTypeDef sMasterConfig = {0};
+  //TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM5_Init 1 */
 
@@ -643,7 +658,7 @@ static void MX_TIM5_Init(void)
   htim5.Instance = TIM5;
   htim5.Init.Prescaler = 0;
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim5.Init.Period = 4294967295;
+  htim5.Init.Period = 4'294'967'295;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_OC_Init(&htim5) != HAL_OK)
@@ -810,8 +825,8 @@ static void MX_TIM9_Init(void)
   /* USER CODE END TIM9_Init 0 */
 
   //TIM_SlaveConfigTypeDef sSlaveConfig = {0};
-  TIM_IC_InitTypeDef sConfigIC = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
+  //TIM_IC_InitTypeDef sConfigIC = {0};
+  //TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM9_Init 1 */
 
@@ -878,12 +893,12 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
+  huart3.Init.BaudRate = 230400; //115200;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
   huart3.Init.Mode = UART_MODE_TX_RX;
-  huart3.Init.HwFlowCtl = UART_HWCONTROL_RTS_CTS;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE; //UART_HWCONTROL_RTS_CTS;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
   if (HAL_UART_Init(&huart3) != HAL_OK)
   {
@@ -945,7 +960,7 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
-  /* DMA1_Stream3_IRQn interrupt configuration */  // USART3
+  /* DMA1_Stream3_IRQn interrupt configuration */  // USART3 TX DMA
   HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */  // DAC
@@ -957,8 +972,9 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream2_IRQn interrupt configuration */  // ADC2
   HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
-
-
+  /* USART2_IRQn interrupt configuration */  // USART3
+  HAL_NVIC_SetPriority(USART3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART3_IRQn);
 
 }
 

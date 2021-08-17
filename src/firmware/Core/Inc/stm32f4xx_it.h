@@ -62,6 +62,10 @@ void DMA1_Stream5_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
 void DMA2_Stream2_IRQHandler(void);
 
+void USART3_IRQHandler(void);
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
+void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart);
+
 void TIM3_IRQHandler(void);
 void TIM6_IRQHandler(void);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
@@ -70,7 +74,7 @@ void ADC1_IRQHandler(void);
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc);
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc);
 
-static bool convComplete1;
+//static bool convComplete1;
 
 /* USER CODE BEGIN EFP */
 

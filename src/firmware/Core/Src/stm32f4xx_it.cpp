@@ -59,6 +59,7 @@
 extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_adc2;
 extern DMA_HandleTypeDef hdma_dac1;
+extern UART_HandleTypeDef huart3;
 extern DMA_HandleTypeDef hdma_usart3_tx;
 extern DMA_HandleTypeDef hdma_tim6_up;
 extern TIM_HandleTypeDef htim3;
@@ -252,6 +253,23 @@ void DMA1_Stream5_IRQHandler(void)
   /* USER CODE END DMA1_Stream5_IRQn 1 */
 }
 
+
+void USART3_IRQHandler(void)
+{
+  HAL_UART_IRQHandler(&huart3);
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+}
+
+void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
+{
+
+}
+
+
 /**
   * @brief This function handles DMA2 stream0 global interrupt.
   */
@@ -297,16 +315,17 @@ void ADC1_IRQHandler(void) {
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   // This callback is automatically called by the HAL on the UEV event
-  if(htim->Instance == TIM3)
+  if(htim->Instance == TIM3) [[likely]]
     HAL_GPIO_TogglePin(LED0_GPIO_Port, LED0_Pin);
   //else if(htim->Instance == TIM2)
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-  //if( hadc->Instance==ADC1 )
-  convComplete1 = true;
-  HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
-
+  if( hadc->Instance==ADC1 )
+  {
+    convComplete1 = true;
+    HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);
+  }
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
