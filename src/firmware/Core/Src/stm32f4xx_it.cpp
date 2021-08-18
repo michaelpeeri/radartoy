@@ -66,7 +66,8 @@ extern TIM_HandleTypeDef htim3;
 extern TIM_HandleTypeDef htim6;
 extern ADC_HandleTypeDef hadc1;
 
-extern bool convComplete1;
+extern volatile bool convComplete1;
+extern volatile bool uart3TxDone;
 
 /* USER CODE BEGIN EV */
 
@@ -261,7 +262,10 @@ void USART3_IRQHandler(void)
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-
+  if( huart->Instance==USART3 ) [[likely]]
+  {
+    uart3TxDone = true;
+  }
 }
 
 void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
@@ -321,7 +325,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-  if( hadc->Instance==ADC1 )
+  if( hadc->Instance==ADC1 ) [[likely]]
   {
     convComplete1 = true;
     HAL_GPIO_TogglePin(LED2_GPIO_Port, LED2_Pin);

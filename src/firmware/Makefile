@@ -22,7 +22,12 @@ TARGET = RadarToy
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Og
+OPT    = -Og
+
+# debug build?
+#DEBUG = 0
+# optimization
+#OPT    = -Os
 
 
 #######################################
@@ -61,19 +66,27 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
-Core/Src/system_stm32f4xx.c
+Core/Src/system_stm32f4xx.c \
+Drivers/CMSIS/DSP/Source/CommonTables/arm_const_structs.c \
+Drivers/CMSIS/DSP/Source/CommonTables/arm_common_tables.c \
+Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_shift_q15.c \
+Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_abs_q15.c \
+Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_q15.c \
+Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_init_q15.c \
+Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_q15.c \
+Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_radix4_q15.c
 
 # C++ sources
 CPP_SOURCES = \
 Core/Src/main.cpp \
+Core/Src/data.cpp \
 Core/Src/stm32f4xx_it.cpp \
 Core/Src/stm32f4xx_hal_msp.cpp 
 
-
-
 # ASM sources
 ASM_SOURCES =  \
-startup_stm32f405xx.s
+startup_stm32f405xx.s \
+Drivers/CMSIS/DSP/Source/TransformFunctions/arm_bitreversal2.s
 
 
 #######################################
@@ -120,8 +133,10 @@ AS_DEFS =
 # C defines
 C_DEFS =  \
 -DUSE_HAL_DRIVER \
--DSTM32F405xx
-
+-DSTM32F405xx \
+-DARM_MATH_CM4 \
+-D__FPU_PRESENT=1U \
+-D__DSP_PRESENT=1
 
 # AS includes
 AS_INCLUDES = 
@@ -132,14 +147,15 @@ C_INCLUDES =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
--IDrivers/CMSIS/Include
+-IDrivers/CMSIS/Include \
+-IDrivers/CMSIS/DSP/Include
 
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
 CFLAGS   = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
-CPPFLAGS = $(MCU) $(C_DEFS) -specs=nosys.specs -specs=nano.specs $(C_INCLUDES) $(OPT) -std=c++20 -Wall -Wno-volatile -fdata-sections -ffunction-sections -fstack-usage -fcallgraph-info
+CPPFLAGS = $(MCU) $(C_DEFS) -specs=nosys.specs -specs=nano.specs $(C_INCLUDES) $(OPT) -std=c++20 -Wall -Wno-volatile -fdata-sections -ffunction-sections -fstack-usage -fcallgraph-info -fno-rtti -fcoroutines
 
 ifeq ($(DEBUG), 1)
 CFLAGS   += -g -gdwarf-2
