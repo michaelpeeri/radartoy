@@ -69,12 +69,21 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c \
 Core/Src/system_stm32f4xx.c \
 Drivers/CMSIS/DSP/Source/CommonTables/arm_const_structs.c \
 Drivers/CMSIS/DSP/Source/CommonTables/arm_common_tables.c \
-Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_shift_q15.c \
-Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_abs_q15.c \
-Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_q15.c \
-Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_init_q15.c \
-Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_q15.c \
-Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_radix4_q15.c
+Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_abs_f32.c \
+Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_scale_f32.c \
+Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_fast_init_f32.c \
+Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_fast_f32.c \
+Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_f32.c \
+Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_radix8_f32.c \
+Drivers/CMSIS/DSP/Source/ComplexMathFunctions/arm_cmplx_mag_f32.c
+
+#Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_shift_q15.c \
+#Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_abs_q15.c \
+#Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_q15.c \
+#Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_init_q15.c \
+#Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_q15.c \
+#Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_radix4_q15.c \
+
 
 # C++ sources
 CPP_SOURCES = \

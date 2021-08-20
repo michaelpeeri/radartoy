@@ -1,13 +1,23 @@
 import serial
+import operator
+from functools import reduce
 from timeit import default_timer
 import matplotlib.pyplot as plt
+import struct
 import numpy as np
+import pandas as pd
+import seaborn as sns
 
 
-def decode(d):
-    ints = list(map(int, d))
-    pairs = [ints[x:x+2] for x in range(0,len(ints),2)]
-    return np.array([(x[0]<<8)+x[1] for x in pairs])
+fftsize=512
+
+#def decodeX(data):
+#    ints = list(map(int, d))
+#    pairs = [ints[x:x+2] for x in range(0,len(ints),2)]
+#    return np.array([(x[0]<<8)+x[1] for x in pairs])
+
+def decode_int16_t(data, L):
+    return struct.unpack('h'*L, data)
 
 
 def analyze(d):
@@ -54,15 +64,67 @@ def analyze(d):
     #plt.legend()
 
 def plot(ar):
-    fig, ax = plt.subplots(figsize=(12,9))
-    plt.imshow( ar )
-    plt.xticks((0,128,256,384,512))
-    ax.set_xticklabels(('0', '0.125f', '0.25f', '0.375f','0.5f'))
+    fig, ax = plt.subplots(figsize=(8,9))
+    #lpdf =  pd.DataFrame( np.hstack( ( np.expand_dims( np.array(range(ar.shape[0])), 1 ), ar ) ) ).melt(id_vars=(0,)).rename(columns={'variable':'bin', 0:'t'}).set_index(['bin'])
+    #sns.lineplot( lpdf, x='bin', y='value', hue='t' )
+    print(ar.shape)
+    mean_spectrum =np.nanmean( ar, axis=0)
+
+    print("Means:")
+    print(mean_spectrum.min())
+    print(np.median(mean_spectrum))
+    print(mean_spectrum.max())
+    peak = mean_spectrum[1:].argmax() + 1
+    print(f"Peak: {peak}")
+    plt.axvline(x=peak, ls='--', color='black')
+    plt.annotate('f={:.3g}, y={:.3g}'.format(peak/ar.shape[1]*0.5, ar[:,peak].mean() ), xy=(peak, 1e4))
+    plt.plot( mean_spectrum, label='mean' )
+
+    #plt.plot( ar[:,100], label='100')
+    #plt.plot( ar[:,300], label='300')
+    ax.set_yscale('log')
+    plt.xticks((0, fftsize//2, fftsize))
+    ax.set_xticklabels(('0', '0.25f', '0.5f'))
+    plt.grid(axis='both')
+    plt.legend()
+    plt.savefig('lineplot4.fHz.png', dpi=200)
+
+
+    fig, ax = plt.subplots(figsize=(8,9))
+    plt.imshow( np.log10(ar) )
+    plt.xticks((0, fftsize//2, fftsize))
+    ax.set_xticklabels(('0', '0.25f', '0.5f'))
     plt.colorbar()
-    plt.savefig('test_ar.png', dpi=200)
+    plt.savefig('waterfall4.fHz.png', dpi=200)
 
 
-with serial.Serial('/dev/ttyUSB0', 921600, timeout=1) as ser:
+
+
+def readPackets(ser, L):
+    buf = []
+    bufLen = 0
+
+    term = b'\x1f\xf0\x1f\xf0'
+
+    while True:
+        buf = bytes()
+        d = ser.read_until(expected=term, size=L*2) #(512*2)
+
+        buf = buf+d
+        while term in buf:
+            tpos = buf.index(term)
+            if tpos>=L:
+                ret = buf[:tpos]
+                if len(ret)>L:
+                    ret = ret[-L:]
+                buf = buf[tpos+len(term):]
+                yield ret
+            else:
+                buf = buf[tpos+len(term):]
+                print(f"Warning: dropping1 {len(d)}")
+
+
+with serial.Serial('/dev/ttyUSB0', 230400, timeout=1) as ser:
     #_ = ser.readline() # discard any partially received packet 
     #x = ser.readline() # use the second packet
 
@@ -71,16 +133,22 @@ with serial.Serial('/dev/ttyUSB0', 921600, timeout=1) as ser:
 
     #analyze(x)
 
-
-    ar = np.zeros(shape=(400,512), dtype='int')
+    ar = np.zeros(shape=(400,fftsize), dtype='int')
     print("Recording data...")
     t0 = default_timer()
-    for i in range(400):
-        d = ser.read(512*2)
+    i = 0
+    for d in readPackets(ser, L=fftsize*2):
+        if(len(d) != fftsize*2):
+            print(f"EEE got {len(d)}")
+        assert(len(d)==fftsize*2)
+        ar[i,:] = np.array( decode_int16_t(d, L=fftsize) )
+
         if i%100==99:
             t = default_timer()
             print(f"{t-t0}s N={i+1}")
-        ar[i,:] = decode(d)
+
+        i += 1
+        if i >= 400: break
     
     t = default_timer()
     print(f"(recorded 400 samples in {t-t0}s - {400/(t-t0)}/s)")

@@ -153,52 +153,13 @@ int main(void)
   HAL_IncTick();
   HAL_GetTick();
 
-
-  // Start ADC using DMA
-
-  const std::string msg = {"Hello, World!\n"};   // TODO where is this stored?
-
-
-  /* TIM6 DMA Init */
-  /* TIM6_UP Init */
-  //hdma_tim6_up.Instance                 = DMA1_Stream1;
-  //hdma_tim6_up.Init.Channel             = DMA_CHANNEL_7;
-  //hdma_tim6_up.Init.Direction           = DMA_MEMORY_TO_PERIPH;
-  //hdma_tim6_up.Init.PeriphInc           = DMA_PINC_DISABLE;
-  //hdma_tim6_up.Init.MemInc              = DMA_MINC_ENABLE;
-  //hdma_tim6_up.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-  //hdma_tim6_up.Init.MemDataAlignment    = DMA_MDATAALIGN_HALFWORD;
-  //hdma_tim6_up.Init.Mode                = DMA_CIRCULAR;
-  //hdma_tim6_up.Init.Priority            = DMA_PRIORITY_LOW;
-  //hdma_tim6_up.Init.FIFOMode            = DMA_FIFOMODE_DISABLE;
-  //if (HAL_DMA_Init(&hdma_tim6_up) != HAL_OK)
-  //{
-  //  Error_Handler();
-  //}
-
-  //__HAL_LINKDMA(htim6, hdma[TIM_DMA_ID_TRIGGER], hdma_tim6_up);
-
-  //HAL_DMA_Init(&hdma_tim6_up);
-
-  //static const uint8_t data[] = {0xFF, 0x0};
-  //HAL_DMA_Start(&hdma_tim6_up, (uint32_t)data, (uint32_t)&GPIOB->ODR, 2);
-  //__HAL_TIM_ENABLE_DMA(&htim6, TIM_DMA_UPDATE);
-
-  //HAL_ADC_Start_DMA()
-
-  //HAL_TIM_Base_Start(&htim6);
-
-  //HAL_NVIC_SetPriority(TIM6_IRQn, 0, 0);
-  //HAL_NVIC_EnableIRQ(TIM6_IRQn);
-  //HAL_TIM_Base_Start_IT(&htim6);
-
-  static std::array<uint16_t,2'048+2> adc1vals;
-  adc1vals.fill(0);
-  //adc1vals[2048+2] = '\n'
-  //adc1vals[2048+1] = '\n';
-
   const size_t fftsize = 512;
 
+  static std::array<uint16_t,fftsize> adc1vals;
+  adc1vals.fill(0);
+ 
+
+#if 0    // Q1.15 version
   std::array<q15_t, fftsize> q15vals;
   arm_rfft_instance_q15 rfft;
   if( arm_rfft_init_q15( &rfft,
@@ -206,8 +167,19 @@ int main(void)
                      0 /*forward FFT*/,
                      0 /*reverse output*/ ) != ARM_MATH_SUCCESS )
     Error_Handler();
-  std::array<q15_t, fftsize*2> rfftout;  // twice the FFT size
+
+  std::array<q15_t, fftsize*2> fftout;  // twice the FFT size
   rfftout.fill(0);
+#else
+  std::array<float32_t, fftsize*2> fftin;
+  std::array<float32_t, fftsize>   fftout;
+#endif
+
+  std::array<int16_t, fftsize+2> outbuffer;
+  outbuffer.fill(0);
+
+
+  //const std::array<int16_t,13> testvals = {127, 173, 209, 226, 220, 193, 150, 103,  60,  33,  27,  44,  80};  // FFT test series
 
 
   //HAL_ADC_Start_DMA(hadc2, pbuf2, 1000);
@@ -217,11 +189,11 @@ int main(void)
   HAL_NVIC_EnableIRQ(TIM3_IRQn);
   HAL_TIM_Base_Start_IT(&htim3);
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
 
   //HAL_ADC_Start(&hadc1);
 
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
   while (1)
   {
     //HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
@@ -242,13 +214,21 @@ int main(void)
     //HAL_Delay(60);
     HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
 
+    //////////////////////////////////////////////////////////////////////
+    //  override real data with test data
+    //////////////////////////////////////////////////////////////////////
+    //{
+    //  for( size_t i=0; i<fftsize; ++i)
+    //    adc1vals[i] = testvals[i%testvals.size()];  // <<8;  // simulate ADC numbers, packed at the upper byte
+    //}
 
+    //////////////////////////////////////////////////////////////////////
+    //  Perform CFFT
     ///////////////////////////////////////////////////////////////////////
-    //  Perform RFFT
-    ///////////////////////////////////////////////////////////////////////
 
-    //convert<uint16_t, q15_t, 128>( adc1vals.cbegin(), const_cast<const uint16_t*>(adc1vals.data()+512), q15vals.begin(), q15vals.end() );
+    //convert<uint16_t, q15_t, 128>( adc1vals.cbeginadc1vals(), const_cast<const uint16_t*>(adc1vals.data()+512), q15vals.begin(), q15vals.end() );
 
+    #if 0
     // Convert data format from UQ8.0 to Q1.15
     {
       const uint16_t* it1 = adc1vals.data();
@@ -257,7 +237,7 @@ int main(void)
       for(; it1 != adc1vals.data()+fftsize; ++it1, ++it2 )
       {
         const q15_t v = static_cast<q15_t>(*it1) >> 8;
-        if( v > 255 ) [[unlikely]]
+        if( v > 255 || v < 0 ) [[unlikely]]
           Error_Handler();
 
         *it2 = v - 128;
@@ -268,22 +248,74 @@ int main(void)
       //  q15vals[i] = 0; //adc1vals[i] - 128;
       }
     }
+    #else
+    {
+      const uint16_t* it1 = adc1vals.data();
+      float32_t*      it2 = fftin.data();
 
-    arm_rfft_q15( &rfft, q15vals.data(), rfftout.data() );
+      for( ; it1 != adc1vals.data()+fftsize; ++it1)
+      {
+        const float32_t v = static_cast<float32_t>(*it1);
+        *it2 = v - 128.0f;
+        ++it2;
+
+        *it2 = 0;
+        ++it2;
+      }
+    }
+
+    #endif
+
+    #if 0
+    arm_rfft_q15( &rfft, q15vals.data(), fftout.data() );
+    #else
+    /* Process the data through the CFFT/CIFFT module */
+    arm_cfft_f32( &arm_cfft_sR_f32_len512,
+                  fftin.data(),
+                  0,
+                  1);
+
+    #endif
 
     //arm_shift_q15(rfftout.data(), 8, rfftout.data(), fftsize );
 
-    arm_abs_q15(  rfftout.data(),    rfftout.data(), fftsize );
+    #if 0
+    for( size_t i=0; i<fftsize; ++i ) // copy real part
+    {
+      outbuffer[i] = fftout[i*2];
+    }
+    arm_abs_q15(  outbuffer.data(),    outbuffer.data(), fftsize/2 );
+    #else
+    //arm_abs_f32(  fftout.data(),       fftout.data(),    fftsize );
+    //outbuffer[i] = static_cast<int16_t>( fftout[i*2] );
+
+    /* Process the data through the Complex Magnitude Module for
+    calculating the magnitude at each bin */
+    arm_cmplx_mag_f32(fftin.data(), fftout.data(), fftsize);
+    arm_scale_f32( fftout.data(), 0.02, fftout.data(), fftsize);  // scale down to fit in int16_t
+
+    for( size_t i=0; i<fftsize; ++i )
+    {
+      float32_t v = fftout[i];
+      if(       v >  32767.0 )
+        v =          32767.0;
+      else if ( v < -32767.0 )
+        v =         -32767.0;
+
+      outbuffer[i] = static_cast<int16_t>( v ); // truncate floating-point
+    }
+    #endif
 
     ///////////////////////////////////////////////////////////////////////
     //  Send an update
     ///////////////////////////////////////////////////////////////////////
-    HAL_UART_Transmit_DMA(&huart3, (uint8_t*)rfftout.data(), fftsize*2);
+    outbuffer.at(fftsize  ) = static_cast<int16_t>(0xf01f);
+    outbuffer.at(fftsize+1) = static_cast<int16_t>(0xf01f);
+    HAL_UART_Transmit_DMA(&huart3, (uint8_t*)outbuffer.data(), fftsize*sizeof(int16_t)+4 );
     while(!uart3TxDone);
     uart3TxDone = false;
 
-    //HAL_Delay(3);
-    //HAL_Delay(880);
+    //HAL_Delay(75);
 
     ///////////////////////////////////////////////////////////////////////
     //  Reset
@@ -917,7 +949,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 921'600; //230400; //115200;
+  huart3.Init.BaudRate = 230'400; // 921'600; //115200;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
